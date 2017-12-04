@@ -1,0 +1,26 @@
+<html>
+    <head>
+        <title>Main</title>
+    </head>
+    <body>
+        <input type="text" value="Type your message here" id="text">
+        <button id="ping">Send</button>
+        <script>
+            let sock = new WebSocket('ws://localhost:8080')
+            // sock.onopen = (event) => {
+            //     console.log('Websocket opened')
+            // }
+            sock.onerror = (error) => {
+                console.log('Web socket error: ' + error)
+            }
+            sock.onmessage = (event) => {
+                console.log('Message received from server')
+                console.log(event.data)
+            }
+            document.getElementById('ping').onclick = () => {
+                let text = document.getElementById('text').value
+                sock.send(text)
+            }
+        </script>
+    </body>
+</html>
