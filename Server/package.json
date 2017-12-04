@@ -1,7 +1,7 @@
 {
   "name": "yap",
   "version": "1.0.0",
-  "description": "Chat app using Node.js and Socket.io",
+  "description": "Chat app using Node.js and Express",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,7 +11,7 @@
     "url": "git+https://github.com/DonnaAnnIssac/yap-js.git"
   },
   "keywords": [
-    "chat"
+    "chat", "Web socket"
   ],
   "author": "Donna Ann Issac",
   "license": "MIT",
