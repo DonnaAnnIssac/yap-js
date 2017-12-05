@@ -1,12 +1,19 @@
 <html>
     <head>
         <title>Main</title>
+        <link href="./styles/styles.css" rel="stylesheet" type="text/css">
     </head>
     <body>
-        <div id="log"></div>
-        <div id="sendCtrls">
-            <input type="text" value="Type your message here" id="text">
-            <button id="ping">Send</button>
+        <div id="appWindow">
+            <div id="chatWindow">
+                <div id="log"></div>
+                <div id="sendCtrls">
+                    <input type="text" value="Type your message here" id="text">
+                    <button id="ping">Send</button>
+                </div>
+            </div>
+            <div id="listFriends"></div>
+            <div id="settings"></div>
         </div>
         <script src="./src/index.js" type="text/javascript">
         </script>
