@@ -2,27 +2,36 @@ const express = require('express')
 const WebSocket = require('ws')
 const http = require('http')
 const app = express()
-const server = http.createServer(app)
-let ws = new WebSocket.Server({server})
+const server = http.createServer(app) // figure this out
+let webSockServer = new WebSocket.Server({server})
+
 app.use(express.static('../Client'))
 
-ws.on('connection', (connection, request) => {
-  console.log('Connected')
-  connection.on('message', (msg) => {
-    console.log('Received: ' + msg)
-    connection.send(msg)
-          // group chat
-    ws.clients.forEach((client) => {
-      if (client !== ws) client.send(msg)
-    })
+webSockServer.clientTracking = true
+
+webSockServer.broadcast = (msg) => {
+  webSockServer.clients.forEach((client) => {
+    console.log(client)
+    client.send(msg)
   })
-  connection.on('close', () => {
+}
+let clients = []
+webSockServer.on('connection', (socket, request) => {
+  clients.push(socket._ultron.id) // maintaining array of client ids
+  socket.on('message', (msg) => {
+    console.log('Received: ' + msg)
+    webSockServer.broadcast(JSON.stringify(msg))
+    // socket.send(msg)
+  })
+
+  socket.on('close', () => {
     console.log('Lost a client')
   })
   console.log('One more client connected')
+  webSockServer.broadcast(JSON.stringify(clients)) // broadcasting list of connected clients
 })
 
-ws.on('close', () => {
+webSockServer.on('close', () => {
   console.log('Closing web socket')
 })
 
