@@ -1,7 +1,19 @@
 let sock = new WebSocket('ws://localhost:8080')
-let log = document.getElementById('log')
-let friendsList = document.getElementById('listFriends')
 let friends = []
+let recipient = document.getElementById('recipient')
+recipient.appendChild(document.createTextNode(''))
+let messages = document.getElementById('messages')
+let friendsList = document.getElementById('listFriends')
+
+document.getElementById('ping').onclick = () => {
+  let text = document.getElementById('text').value
+  // messages.appendChild(document.createTextNode(text))
+  // let id = recipient.childNodes[0] // recipient.firstChild
+  // let msgObj = {}
+  // msgObj[id] = text
+  // sock.send(JSON.stringify(msgObj))
+  sock.send(text)
+}
 
 sock.onopen = (event) => {
   console.log('Websocket opened')
@@ -15,28 +27,38 @@ sock.onmessage = (event) => {
   console.log('Message received from server')
   if (typeof JSON.parse(event.data) === 'string') {
     let msg = event.data.slice(1, event.data.length - 1)
-    log = createChild(log, msg)
-  } else dispplayConnectedClients(event.data)
+    messages = createChildWithText(messages, msg)
+  } else {
+    displayConnectedClients(event.data)
+    addListenerToClient(friendsList)
+  }
 }
 
-document.getElementById('ping').onclick = () => {
-  let text = document.getElementById('text').value
-  // log.appendChild(document.createTextNode(text))
-  sock.send(text)
-}
-
-function createChild (parent, text) {
+function createChildWithText (parent, text) {
   let dataDiv = document.createElement('div')
   dataDiv.appendChild(document.createTextNode(text))
   parent.appendChild(dataDiv)
   return parent
 }
 
-function dispplayConnectedClients (list) {
+function displayConnectedClients (list) {
   friends = JSON.parse(list)
   friends.forEach((friend, i) => {
     if (!(friendsList.hasChildNodes()) || friendsList.childNodes.length - 1 < i) {
-      friendsList = createChild(friendsList, friend)
+      friendsList = createChildWithText(friendsList, friend)
     }
+  })
+}
+
+function addListenerToClient (parent) {
+  console.log('Adding listener')
+  let children = parent.childNodes
+  console.log(children)
+  children.forEach((child) => {
+    console.log('Trying')
+    console.log(child.textContent)
+    child.addEventListener('click', () => {
+      recipient.textContent = child.textContent
+    })
   })
 }
