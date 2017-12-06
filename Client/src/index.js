@@ -1,5 +1,6 @@
 let sock = new WebSocket('ws://localhost:8080')
 let friends = []
+let from
 let recipient = document.getElementById('recipient')
 recipient.appendChild(document.createTextNode(''))
 let messages = document.getElementById('messages')
@@ -9,9 +10,8 @@ document.getElementById('ping').onclick = () => {
   let msgObj = {}
   msgObj['text'] = document.getElementById('text').value
   messages.appendChild(document.createTextNode(msgObj['text']))
-  msgObj['id'] = recipient.firstChild.textContent
+  msgObj['to'] = (from === undefined) ? recipient.textContent : from
   sock.send(JSON.stringify(msgObj))
-  // sock.send(text)
 }
 
 sock.onopen = (event) => {
@@ -24,12 +24,16 @@ sock.onerror = (error) => {
 
 sock.onmessage = (event) => {
   console.log('Message received from server')
-  if (typeof JSON.parse(event.data) === 'string') {
+  if (typeof JSON.parse(event.data) === 'string') { // broadcast type msg
     let msg = event.data.slice(1, event.data.length - 1)
     messages = createChildWithText(messages, msg)
-  } else {
+  } else if (Array.isArray(JSON.parse(event.data))) { // client list
     displayConnectedClients(event.data)
     addListenerToClient(friendsList)
+  } else { // private message
+    messages = createChildWithText(messages, JSON.parse(event.data)['text'])
+    from = JSON.parse(event.data)['from']
+    recipient.textContent = from
   }
 }
 
@@ -52,10 +56,8 @@ function displayConnectedClients (list) {
 function addListenerToClient (parent) {
   console.log('Adding listener')
   let children = parent.childNodes
-  console.log(children)
   children.forEach((child) => {
     console.log('Trying')
-    console.log(child.textContent)
     child.addEventListener('click', () => {
       recipient.textContent = child.textContent
     })

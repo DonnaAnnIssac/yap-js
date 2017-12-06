@@ -11,25 +11,17 @@ webSockServer.clientTracking = true
 
 webSockServer.broadcast = (msg) => {
   webSockServer.clients.forEach((client) => {
-    client.send(msg)
+    client.send(msg) // msg -> string
   })
 }
 let clients = []
 let msgObj = {}
+
 webSockServer.on('connection', (socket, request) => {
   clients.push(socket._ultron.id) // maintaining array of client ids
   socket.on('message', (msg) => {
-    let message = JSON.parse(msg)
-    console.log('Received: ' + message.text)
-    if (message.id === undefined) webSockServer.broadcast(message.text)
-    else {
-      for (let client of webSockServer.clients) {
-        if (client._ultron.id === parseInt(message.id)) {
-          client.send(JSON.stringify(message.text))
-          break
-        }
-      }
-    }
+    // console.log(JSON.parse(msg))
+    handleMessages(msg, socket._ultron.id)
   })
 
   socket.on('close', () => {
@@ -46,3 +38,19 @@ webSockServer.on('close', () => {
 server.listen(8080, () => {
   console.log('Example app listening on port 8080!')
 })
+
+function handleMessages (msg, id) {
+  let message = JSON.parse(msg)
+  // console.log('Received: ' + message.text)
+  if (message.to === undefined) webSockServer.broadcast(JSON.stringify(message.text))
+  else {
+    for (let client of webSockServer.clients) {
+      if (client._ultron.id === parseInt(message.to)) {
+        msgObj['text'] = message.text
+        msgObj['from'] = id
+        client.send(JSON.stringify(msgObj))
+        break
+      }
+    }
+  }
+}
