@@ -11,17 +11,25 @@ webSockServer.clientTracking = true
 
 webSockServer.broadcast = (msg) => {
   webSockServer.clients.forEach((client) => {
-    console.log(client)
     client.send(msg)
   })
 }
 let clients = []
+let msgObj = {}
 webSockServer.on('connection', (socket, request) => {
   clients.push(socket._ultron.id) // maintaining array of client ids
   socket.on('message', (msg) => {
-    console.log('Received: ' + msg)
-    webSockServer.broadcast(JSON.stringify(msg))
-    // socket.send(msg)
+    let message = JSON.parse(msg)
+    console.log('Received: ' + message.text)
+    if (message.id === undefined) webSockServer.broadcast(message.text)
+    else {
+      for (let client of webSockServer.clients) {
+        if (client._ultron.id === parseInt(message.id)) {
+          client.send(JSON.stringify(message.text))
+          break
+        }
+      }
+    }
   })
 
   socket.on('close', () => {

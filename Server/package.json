@@ -11,7 +11,8 @@
     "url": "git+https://github.com/DonnaAnnIssac/yap-js.git"
   },
   "keywords": [
-    "chat", "Web socket"
+    "chat",
+    "Web socket"
   ],
   "author": "Donna Ann Issac",
   "license": "MIT",

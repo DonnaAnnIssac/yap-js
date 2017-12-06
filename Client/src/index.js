@@ -6,13 +6,12 @@ let messages = document.getElementById('messages')
 let friendsList = document.getElementById('listFriends')
 
 document.getElementById('ping').onclick = () => {
-  let text = document.getElementById('text').value
-  // messages.appendChild(document.createTextNode(text))
-  // let id = recipient.childNodes[0] // recipient.firstChild
-  // let msgObj = {}
-  // msgObj[id] = text
-  // sock.send(JSON.stringify(msgObj))
-  sock.send(text)
+  let msgObj = {}
+  msgObj['text'] = document.getElementById('text').value
+  messages.appendChild(document.createTextNode(msgObj['text']))
+  msgObj['id'] = recipient.firstChild.textContent
+  sock.send(JSON.stringify(msgObj))
+  // sock.send(text)
 }
 
 sock.onopen = (event) => {
