@@ -1,9 +1,0 @@
-html, body {
-    background-color: whitesmoke;
-    height: 100%;
-    margin: 0;
-}
-
-#appWindow {
-    display: flex;
-}
