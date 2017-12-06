@@ -9,9 +9,9 @@ app.use(express.static('./Client'))
 
 webSockServer.clientTracking = true
 
-webSockServer.broadcast = (msg) => {
+webSockServer.broadcast = (msg, from) => {
   webSockServer.clients.forEach((client) => {
-    client.send(msg) // msg -> string
+    if (client._ultron.id !== from) client.send(msg) // msg -> string
   })
 }
 let clients = []
@@ -28,6 +28,7 @@ webSockServer.on('connection', (socket, request) => {
     console.log('Lost a client')
   })
   console.log('One more client connected')
+  socket.send(socket._ultron.id)
   webSockServer.broadcast(JSON.stringify(clients)) // broadcasting list of connected clients
 })
 
@@ -42,7 +43,7 @@ server.listen(8080, () => {
 function handleMessages (msg, id) {
   let message = JSON.parse(msg)
   // console.log('Received: ' + message.text)
-  if (message.to === undefined) webSockServer.broadcast(JSON.stringify(message.text))
+  if (message.to.length === 0) webSockServer.broadcast(JSON.stringify(message.text), id)
   else {
     for (let client of webSockServer.clients) {
       if (client._ultron.id === parseInt(message.to)) {

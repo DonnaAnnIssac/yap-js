@@ -1,6 +1,7 @@
 let sock = new WebSocket('ws://localhost:8080')
 let friends = []
 let from
+let myId
 let recipient = document.getElementById('recipient')
 recipient.appendChild(document.createTextNode(''))
 let messages = document.getElementById('messages')
@@ -30,6 +31,8 @@ sock.onmessage = (event) => {
   } else if (Array.isArray(JSON.parse(event.data))) { // client list
     displayConnectedClients(event.data)
     addListenerToClient(friendsList)
+  } else if (typeof JSON.parse(event.data) === 'number') { // current client id
+    myId = JSON.parse(event.data)
   } else { // private message
     messages = createChildWithText(messages, JSON.parse(event.data)['text'])
     from = JSON.parse(event.data)['from']
@@ -54,10 +57,9 @@ function displayConnectedClients (list) {
 }
 
 function addListenerToClient (parent) {
-  console.log('Adding listener')
+  // console.log('Adding listener')
   let children = parent.childNodes
   children.forEach((child) => {
-    console.log('Trying')
     child.addEventListener('click', () => {
       recipient.textContent = child.textContent
     })
