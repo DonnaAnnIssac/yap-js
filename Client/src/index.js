@@ -1,6 +1,4 @@
 let sock = new WebSocket('ws://localhost:8080')
-let friends = []
-let from, to
 let myId
 let recipient = document.getElementById('recipient')
 recipient.appendChild(document.createTextNode(''))
@@ -11,12 +9,13 @@ document.getElementById('save').onclick = () => {
   myId = document.getElementById('userName').value
   sock.send(JSON.stringify(myId))
 }
+
 document.getElementById('ping').onclick = () => {
   let msgObj = {}
-  msgObj['text'] = document.getElementById('text').value
-  msgObj['to'] = (from === undefined) ? recipient.textContent : from
+  msgObj['to'] = recipient.textContent
   msgObj['from'] = myId
-  messages.appendChild(document.createTextNode(msgObj['text']))
+  msgObj['text'] = document.getElementById('text').value
+  displayMessage(msgObj)
   sock.send(JSON.stringify(msgObj))
 }
 
@@ -32,24 +31,15 @@ sock.onmessage = (event) => {
   let data = JSON.parse(event.data)
   if (typeof data === 'string') { // broadcast type msg
     let msg = data.slice(1, data.length - 1)
-    displayChat(msg)
+    displayMessage(msg)
   } else if (Array.isArray(data)) { // client list
-    displayConnectedClients(event.data)
+    displayConnectedClients(data)
     addListenerToClient(friendsList)
-  } else if (data.history !== undefined) {
-    let chatHistory = data.history
-    let children = document.getElementsByClassName('msgs')
-    for (let i = 0; i < children.length; i++) messages.removeChild(children[i])
-    if (chatHistory.length !== 0) {
-      chatHistory.forEach((msg) => {
-        if ((msg.to === myId && msg.from === recipient.textContent) || (msg.to === recipient.textContent && msg.from === myId))
-          displayChat(msg)
-      })
-    }
-  } else { // private message
+  } else if (data.text === undefined) { // chat history
     displayChat(data)
-    from = data.from
-    recipient.textContent = from
+  } else { // private message
+    recipient.textContent = data.from
+    displayChat(data)
   }
 }
 
@@ -57,15 +47,12 @@ function createChildWithText (parent, text) {
   let dataDiv = document.createElement('div')
   dataDiv.appendChild(document.createTextNode(text))
   parent.appendChild(dataDiv)
-  return parent
 }
 
-function displayConnectedClients (list) {
-  friends = JSON.parse(list)
+function displayConnectedClients (friends) {
   friends.forEach((friend, i) => {
     if (!(friendsList.hasChildNodes()) || friendsList.childNodes.length - 1 < i) {
-      friendsList = createChildWithText(friendsList, friend.name
-      )
+      createChildWithText(friendsList, friend.name)
     }
   })
 }
@@ -80,11 +67,26 @@ function addListenerToClient (parent) {
   })
 }
 
-function displayChat (msg) {
+function displayMessage (msg) {
   let textDiv = document.createElement('div')
   textDiv.className = 'msgs'
   textDiv.appendChild(document.createTextNode(msg.text))
   messages.appendChild(textDiv)
   if (msg.from === myId) textDiv.style.alignSelf = 'flex-end'
   else textDiv.style.alignSelf = 'flex-start'
+}
+
+function clearMsgBox () {
+  while (messages.hasChildNodes()) messages.removeChild(messages.lastChild)
+}
+
+function displayChat (data) {
+  clearMsgBox()
+  if (data.history.length !== 0) {
+    data.history.forEach((msg) => {
+      if ((msg.to === myId && msg.from === recipient.textContent) || (msg.to === recipient.textContent && msg.from === myId)) {
+        displayMessage(msg)
+      }
+    })
+  }
 }
