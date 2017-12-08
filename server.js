@@ -2,34 +2,25 @@ const express = require('express')
 const WebSocket = require('ws')
 const http = require('http')
 const app = express()
-const server = http.createServer(app) // figure this out
+const server = http.createServer(app)
 let webSockServer = new WebSocket.Server({server})
 
 app.use(express.static('./Client'))
 
 webSockServer.clientTracking = true
 
-webSockServer.broadcast = (msg, from) => {
-  webSockServer.clients.forEach((client) => {
-    if (client._ultron.id !== from) client.send(msg) // msg -> string
-  })
-}
 let clients = []
-let msgObj = {}
+let messages = []
 
 webSockServer.on('connection', (socket, request) => {
-  clients.push(socket._ultron.id) // maintaining array of client ids
   socket.on('message', (msg) => {
-    // console.log(JSON.parse(msg))
-    handleMessages(msg, socket._ultron.id)
+    handleMessages(msg, socket)
   })
 
   socket.on('close', () => {
     console.log('Lost a client')
   })
   console.log('One more client connected')
-  socket.send(socket._ultron.id)
-  webSockServer.broadcast(JSON.stringify(clients)) // broadcasting list of connected clients
 })
 
 webSockServer.on('close', () => {
@@ -40,18 +31,39 @@ server.listen(8080, () => {
   console.log('Example app listening on port 8080!')
 })
 
-function handleMessages (msg, id) {
+function handleMessages (msg, socket) {
   let message = JSON.parse(msg)
-  // console.log('Received: ' + message.text)
-  if (message.to.length === 0) webSockServer.broadcast(JSON.stringify(message.text), id)
-  else {
-    for (let client of webSockServer.clients) {
-      if (client._ultron.id === parseInt(message.to)) {
-        msgObj['text'] = message.text
-        msgObj['from'] = id
-        client.send(JSON.stringify(msgObj))
-        break
-      }
-    }
+  console.log('Received: ' + message)
+  if (typeof message === 'string') { // in case of client id
+    clients.push({'name': message, 'socket': socket._ultron.id})
+    broadcast(JSON.stringify(clients)) // broadcasting list of connected clients
+  } else if (message.to.length === 0) broadcast(JSON.stringify(message.text), socket._ultron.id) // in case of broadcast
+  else if (message.text === undefined) { // in case of chat history
+    let history = retrieveHistory(message)
+    socket.send(JSON.stringify({'to': message.to, 'from': message.from, 'history': history}))
+  } else { // in case of private message
+    messages.push({'text': message.text, 'from': message.from, 'to': message.to})
+    sendPrivateMsg(message)
   }
+}
+
+function broadcast (msg, from) {
+  webSockServer.clients.forEach((client) => {
+    if (client._ultron.id !== from) client.send(msg) // msg -> string
+  })
+}
+
+function sendPrivateMsg (message) {
+  let receiver = clients.filter((client) => { return client.name === message.to })[0]
+  webSockServer.clients.forEach((client) => {
+    if (client._ultron.id === receiver.socket) {
+      client.send(JSON.stringify({'text': message.text, 'from': message.from, 'to': message.to}))
+    }
+  })
+}
+
+function retrieveHistory (message) {
+  return messages.filter((msgObj) => {
+    return ((message.to === msgObj.to && message.from === msgObj.from) || (message.to === msgObj.from && message.from === msgObj.to))
+  })
 }
