@@ -51,7 +51,10 @@ function createChildWithText (parent, text) {
 
 function displayConnectedClients (friends) {
   friends.forEach((friend, i) => {
-    if (!(friendsList.hasChildNodes()) || friendsList.childNodes.length - 1 < i) {
+    if (friend.name !== myId &&
+      ((friendsList.hasChildNodes() && friendsList.lastChild.innerHTML !== friend.name) ||
+      !friendsList.hasChildNodes()) &&
+      friendsList.childNodes.length - 1 < i) {
       createChildWithText(friendsList, friend.name)
     }
   })
