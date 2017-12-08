@@ -28,12 +28,11 @@ webSockServer.on('close', () => {
 })
 
 server.listen(8080, () => {
-  console.log('Example app listening on port 8080!')
+  console.log('Listening on port 8080')
 })
 
 function handleMessages (msg, socket) {
   let message = JSON.parse(msg)
-  console.log('Received: ' + message)
   if (typeof message === 'string') { // in case of client id
     clients.push({'name': message, 'socket': socket._ultron.id})
     broadcast(JSON.stringify(clients)) // broadcasting list of connected clients
@@ -42,8 +41,8 @@ function handleMessages (msg, socket) {
     let history = retrieveHistory(message)
     socket.send(JSON.stringify({'to': message.to, 'from': message.from, 'history': history}))
   } else { // in case of private message
-    messages.push({'text': message.text, 'from': message.from, 'to': message.to})
-    sendPrivateMsg(message)
+    messages.push(message)
+    sendPrivateMsg(message, retrieveHistory(message))
   }
 }
 
@@ -53,11 +52,11 @@ function broadcast (msg, from) {
   })
 }
 
-function sendPrivateMsg (message) {
+function sendPrivateMsg (message, history) {
   let receiver = clients.filter((client) => { return client.name === message.to })[0]
   webSockServer.clients.forEach((client) => {
     if (client._ultron.id === receiver.socket) {
-      client.send(JSON.stringify({'text': message.text, 'from': message.from, 'to': message.to}))
+      client.send(JSON.stringify({'to': message.to, 'from': message.from, 'text': message.text, 'history': history}))
     }
   })
 }
