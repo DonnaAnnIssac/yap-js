@@ -7,11 +7,12 @@ let friendsList = document.getElementById('listFriends')
 
 document.getElementById('save').onclick = () => {
   myId = document.getElementById('userName').value
-  sock.send(JSON.stringify(myId))
+  sock.send(JSON.stringify({'type': 'clientID', 'text': myId}))
 }
 
 document.getElementById('ping').onclick = () => {
   let msgObj = {}
+  msgObj['type'] = 'pm'
   msgObj['to'] = recipient.textContent
   msgObj['from'] = myId
   msgObj['text'] = document.getElementById('text').value
@@ -28,18 +29,18 @@ sock.onerror = (error) => {
 }
 
 sock.onmessage = (event) => {
-  let data = JSON.parse(event.data)
-  if (typeof data === 'string') { // broadcast type msg
-    let msg = data.slice(1, data.length - 1)
-    displayMessage(msg)
-  } else if (Array.isArray(data)) { // client list
-    displayConnectedClients(data)
+  let message = JSON.parse(event.data)
+  if (message.type === 'list') {
+    displayConnectedClients(message.dataObj)
     addListenerToClient(friendsList)
-  } else if (data.text === undefined) { // chat history
-    displayChat(data)
-  } else { // private message
-    recipient.textContent = data.from
-    displayChat(data)
+  } else if (message.type === 'pm') {
+    recipient.textContent = message.from
+    displayChat(message)
+  } else if (message.type === 'history') {
+    displayChat(message)
+  } else if (message.type === 'broadcast') {
+    recipient.textContent = message.from
+    displayChat(message)
   }
 }
 
@@ -51,11 +52,11 @@ function createChildWithText (parent, text) {
 
 function displayConnectedClients (friends) {
   friends.forEach((friend, i) => {
-    if (friend.name !== myId &&
-      ((friendsList.hasChildNodes() && friendsList.lastChild.innerHTML !== friend.name) ||
-      !friendsList.hasChildNodes()) &&
+    if (friend !== myId &&
+      ((friendsList.hasChildNodes() && friendsList.lastChild.innerHTML !== friend) ||
+        !friendsList.hasChildNodes()) &&
       friendsList.childNodes.length - 1 < i) {
-      createChildWithText(friendsList, friend.name)
+      createChildWithText(friendsList, friend)
     }
   })
 }
@@ -65,7 +66,7 @@ function addListenerToClient (parent) {
   children.forEach((child) => {
     child.addEventListener('click', () => {
       recipient.textContent = child.textContent
-      sock.send(JSON.stringify({'to': recipient.textContent, 'from': myId}))
+      sock.send(JSON.stringify({ 'type': 'history', 'to': recipient.textContent, 'from': myId }))
     })
   })
 }
