@@ -1,5 +1,6 @@
 let sock = new WebSocket('ws://localhost:8080')
 let myId
+let friends = {}
 let recipient = document.getElementById('recipient')
 recipient.appendChild(document.createTextNode(''))
 let messages = document.getElementById('messages')
@@ -52,6 +53,7 @@ function createChildWithText (parent, text) {
   let dataDiv = document.createElement('div')
   dataDiv.appendChild(document.createTextNode(text))
   parent.appendChild(dataDiv)
+  friends[text] = false
 }
 
 function displayConnectedClients (friends) {
@@ -66,12 +68,14 @@ function displayConnectedClients (friends) {
 }
 
 function addListenerToClient (parent) {
-  let children = parent.childNodes
-  children.forEach((child) => {
-    child.addEventListener('click', () => {
-      recipient.textContent = child.textContent
-      sock.send(JSON.stringify({ 'type': 'history', 'to': recipient.textContent, 'from': myId }))
-    })
+  parent.childNodes.forEach((child) => {
+    if (friends[child.textContent] === false) {
+      friends[child.textContent] = true
+      child.addEventListener('click', () => {
+        recipient.textContent = child.textContent
+        sock.send(JSON.stringify({ 'type': 'history', 'to': recipient.textContent, 'from': myId }))
+      })
+    }
   })
 }
 
