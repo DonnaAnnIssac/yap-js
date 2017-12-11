@@ -9,7 +9,8 @@ app.use(express.static('./Client'))
 
 webSockServer.clientTracking = true
 
-let clients = []
+let clients = {}
+let clientList = []
 let messages = []
 
 webSockServer.on('connection', (socket, request) => {
@@ -33,30 +34,28 @@ server.listen(8080, () => {
 
 function handleMessages (msg, socket) {
   let message = JSON.parse(msg)
-  if (typeof message === 'string') { // in case of client id
-    clients.push({'name': message, 'socket': socket._ultron.id})
-    broadcast(JSON.stringify(clients)) // broadcasting list of connected clients
-  } else if (message.to.length === 0) broadcast(JSON.stringify(message.text), socket._ultron.id) // in case of broadcast
-  else if (message.text === undefined) { // in case of chat history
-    let history = retrieveHistory(message)
-    socket.send(JSON.stringify({'to': message.to, 'from': message.from, 'history': history}))
-  } else { // in case of private message
+  if (message.type === 'clientID') {
+    saveAndSendClientList(message, socket)
+  } else if (message.type === 'pm') {
     messages.push(message)
     sendPrivateMsg(message, retrieveHistory(message))
-  }
+  } else if (message.type === 'history') {
+    let history = retrieveHistory(message)
+    socket.send(JSON.stringify({'type': 'history', 'to': message.to, 'from': message.from, 'history': history}))
+  } else if (message.type === 'broadcast') webSockServer.broadcast(JSON.stringify(message.text), socket._ultron.id)
 }
 
-function broadcast (msg, from) {
+webSockServer.broadcast = (msg, from) => {
   webSockServer.clients.forEach((client) => {
     if (client._ultron.id !== from) client.send(msg) // msg -> string
   })
 }
 
 function sendPrivateMsg (message, history) {
-  let receiver = clients.filter((client) => { return client.name === message.to })[0]
+  let receiver = clientList.filter((client) => { return client === message.to })[0]
   webSockServer.clients.forEach((client) => {
-    if (client._ultron.id === receiver.socket) {
-      client.send(JSON.stringify({'to': message.to, 'from': message.from, 'text': message.text, 'history': history}))
+    if (client._ultron.id === clients[receiver]._ultron.id) {
+      client.send(JSON.stringify({'type': 'pm', 'to': message.to, 'from': message.from, 'text': message.text, 'history': history}))
     }
   })
 }
@@ -65,4 +64,10 @@ function retrieveHistory (message) {
   return messages.filter((msgObj) => {
     return ((message.to === msgObj.to && message.from === msgObj.from) || (message.to === msgObj.from && message.from === msgObj.to))
   })
+}
+
+function saveAndSendClientList (message, socket) {
+  clients[message.text] = socket
+  clientList.push(message.text)
+  webSockServer.broadcast(JSON.stringify({'type': 'list', 'dataObj': clientList}))
 }
