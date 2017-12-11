@@ -53,11 +53,7 @@ webSockServer.broadcast = (msg, from) => {
 
 function sendPrivateMsg (message, history) {
   let receiver = clientList.filter((client) => { return client === message.to })[0]
-  webSockServer.clients.forEach((client) => {
-    if (client._ultron.id === clients[receiver]._ultron.id) {
-      client.send(JSON.stringify({'type': 'pm', 'to': message.to, 'from': message.from, 'text': message.text, 'history': history}))
-    }
-  })
+  clients[receiver].send(JSON.stringify({'type': 'pm', 'to': message.to, 'from': message.from, 'text': message.text, 'history': history}))
 }
 
 function retrieveHistory (message) {
