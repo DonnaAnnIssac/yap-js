@@ -20,6 +20,10 @@ document.getElementById('ping').onclick = () => {
   sock.send(JSON.stringify(msgObj))
 }
 
+document.getElementById('text').onclick = () => {
+  document.getElementById('text').value = ''
+}
+
 sock.onopen = (event) => {
   console.log('Websocket opened')
 }
