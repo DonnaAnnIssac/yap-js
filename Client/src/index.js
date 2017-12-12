@@ -47,6 +47,8 @@ sock.onmessage = (event) => {
   } else if (message.type === 'broadcast') {
     recipient.textContent = message.from
     displayChat(message)
+  } else if (message.type === 'closeConn') {
+    handleClosedConn(message)
   }
 }
 
@@ -109,6 +111,14 @@ function notify (message) {
   friendsList.childNodes.forEach((friend) => {
     if (friend.textContent === message.from) {
       friend.style.fontWeight = 'bolder'
+    }
+  })
+}
+
+function handleClosedConn (message) {
+  friendsList.childNodes.forEach((friend) => {
+    if (friend.textContent === message.from) {
+      friendsList.removeChild(friend)
     }
   })
 }
