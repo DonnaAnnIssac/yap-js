@@ -18,6 +18,7 @@ document.getElementById('ping').onclick = () => {
   msgObj['from'] = myId
   msgObj['text'] = document.getElementById('text').value
   displayMessage(msgObj)
+  document.getElementById('text').value = ''
   sock.send(JSON.stringify(msgObj))
 }
 
@@ -39,8 +40,8 @@ sock.onmessage = (event) => {
     displayConnectedClients(message.dataObj)
     addListenerToClient(friendsList)
   } else if (message.type === 'pm') {
-    recipient.textContent = message.from
-    displayChat(message)
+    if (recipient.textContent !== message.from) notify(message)
+    else displayMessage(message)
   } else if (message.type === 'history') {
     displayChat(message)
   } else if (message.type === 'broadcast') {
@@ -73,6 +74,7 @@ function addListenerToClient (parent) {
       friends[child.textContent] = true
       child.addEventListener('click', () => {
         recipient.textContent = child.textContent
+        if (child.style.fontWeight === 'bolder') child.style.fontWeight = 'normal'
         sock.send(JSON.stringify({ 'type': 'history', 'to': recipient.textContent, 'from': myId }))
       })
     }
@@ -101,4 +103,12 @@ function displayChat (data) {
       }
     })
   }
+}
+
+function notify (message) {
+  friendsList.childNodes.forEach((friend) => {
+    if (friend.textContent === message.from) {
+      friend.style.fontWeight = 'bolder'
+    }
+  })
 }
