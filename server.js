@@ -19,7 +19,12 @@ webSockServer.on('connection', (socket, request) => {
   })
 
   socket.on('close', () => {
-    console.log('Lost a client')
+    let msg = {}
+    msg['type'] = 'closeConn'
+    msg['from'] = clientList.filter((client) => {
+      return clients[client]._ultron.id === socket._ultron.id
+    })[0]
+    webSockServer.broadcast(JSON.stringify(msg), socket._ultron.id)
   })
   console.log('One more client connected')
 })
@@ -35,6 +40,9 @@ server.listen(8080, () => {
 function handleMessages (msg, socket) {
   let message = JSON.parse(msg)
   if (message.type === 'clientID') {
+    clientList.forEach((client) => {
+      if (message.text === client) reopenConn(message, socket)
+    })
     saveAndSendClientList(message, socket)
   } else if (message.type === 'pm') {
     messages.push(message)
@@ -66,4 +74,9 @@ function saveAndSendClientList (message, socket) {
   clients[message.text] = socket
   clientList.push(message.text)
   webSockServer.broadcast(JSON.stringify({'type': 'list', 'dataObj': clientList}))
+}
+
+function reopenConn (message, socket) {
+  clients[message.text] = socket
+  webSockServer.broadcast(JSON.stringify({'type': 'reopenConn', 'from': message.text}), socket._ultron.id)
 }

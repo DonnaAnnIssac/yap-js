@@ -44,11 +44,13 @@ sock.onmessage = (event) => {
     else displayMessage(message)
   } else if (message.type === 'history') {
     displayChat(message)
+  } else if (message.type === 'closeConn') {
+    handleClosedConn(message)
+  } else if (message.type === 'reopenConn') {
+    handleReopenConn(message)
   } else if (message.type === 'broadcast') {
     recipient.textContent = message.from
     displayChat(message)
-  } else if (message.type === 'closeConn') {
-    handleClosedConn(message)
   }
 }
 
@@ -76,10 +78,9 @@ function addListenerToClient (parent) {
       friends[child.textContent] = true
       child.addEventListener('click', () => {
         recipient.textContent = child.textContent
+        document.getElementById('ping').disabled = false
         if (child.style.fontWeight === 'bolder') child.style.fontWeight = 'normal'
-        if (child.style.fontWeight === 'lighter') {
-          document.getElementById('ping').disabled = true
-        }
+        if (child.style.fontWeight === 'lighter') document.getElementById('ping').disabled = true
         sock.send(JSON.stringify({ 'type': 'history', 'to': recipient.textContent, 'from': myId }))
       })
     }
@@ -122,6 +123,14 @@ function handleClosedConn (message) {
   friendsList.childNodes.forEach((friend) => {
     if (friend.textContent === message.from) {
       friend.style.fontWeight = 'lighter'
+    }
+  })
+}
+
+function handleReopenConn (message) {
+  friendsList.childNodes.forEach((friend) => {
+    if (friend.textContent === message.from) {
+      friend.style.fontWeight = 'normal'
     }
   })
 }
