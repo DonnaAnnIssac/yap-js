@@ -6,16 +6,21 @@
         <body>
             <div id="appWindow">
                 <div id="sideBar">
-                    <div>
+                    <div id="id">
                         <input type="text" value="Enter name" id="userName">
+                        <button id="save">Save</button>
                     </div>
-                    <div id="save">Save</div>
-                    <div id="listFriends"></div>
-                    <div id="settings"></div>
+                    <div id="controls"></div>
+                    <div id="friends">
+                        <div id="listFriends"></div>
+                    </div>
                 </div>
                 <div id="chatWindow">
                     <div id="recipient"></div>
-                    <div id="messages"></div>
+                    <div id="msgBox">
+                        <div id="messages"></div>
+                    </div>
+
                     <div id="sendCtrls">
                         <input type="text" value="Type your message here" id="text">
                         <button id="ping">Send</button>
