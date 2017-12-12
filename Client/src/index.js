@@ -77,6 +77,9 @@ function addListenerToClient (parent) {
       child.addEventListener('click', () => {
         recipient.textContent = child.textContent
         if (child.style.fontWeight === 'bolder') child.style.fontWeight = 'normal'
+        if (child.style.fontWeight === 'lighter') {
+          document.getElementById('ping').disabled = true
+        }
         sock.send(JSON.stringify({ 'type': 'history', 'to': recipient.textContent, 'from': myId }))
       })
     }
@@ -118,7 +121,7 @@ function notify (message) {
 function handleClosedConn (message) {
   friendsList.childNodes.forEach((friend) => {
     if (friend.textContent === message.from) {
-      friendsList.removeChild(friend)
+      friend.style.fontWeight = 'lighter'
     }
   })
 }
