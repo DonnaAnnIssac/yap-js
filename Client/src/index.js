@@ -40,6 +40,7 @@ sock.onmessage = (event) => {
     displayConnectedClients(message.dataObj)
     addListenerToClient(friendsList)
   } else if (message.type === 'pm') {
+    sock.send(JSON.stringify({'type': 'delivery-report', 'from': message.from, 'to': message.to}))
     if (recipient.textContent !== message.from) notify(message)
     else displayMessage(message)
   } else if (message.type === 'history') {
@@ -48,6 +49,10 @@ sock.onmessage = (event) => {
     handleClosedConn(message)
   } else if (message.type === 'reopenConn') {
     handleReopenConn(message)
+  } else if (message.type === 'delivery-report') {
+    displayReportDiv()
+  } else if (message.type === 'sent-report') {
+    displayReportDiv()
   } else if (message.type === 'broadcast') {
     recipient.textContent = message.from
     displayChat(message)
@@ -89,11 +94,15 @@ function addListenerToClient (parent) {
 
 function displayMessage (msg) {
   let textDiv = document.createElement('div')
-  textDiv.className = 'msgs'
+  textDiv.className = (msg.from === myId) ? 'msgs-from-me' : 'msgs-to-me'
   textDiv.appendChild(document.createTextNode(msg.text))
+  let statusDiv = document.createElement('div')
+  statusDiv.className = 'status'
+  textDiv.appendChild(statusDiv)
   messages.appendChild(textDiv)
-  if (msg.from === myId) textDiv.style.alignSelf = 'flex-end'
-  else textDiv.style.alignSelf = 'flex-start'
+  textDiv.style.display = 'flex'
+  textDiv.style.flexDirection = 'column'
+  textDiv.style.alignSelf = (msg.from === myId) ? 'flex-end' : 'flex-start'
 }
 
 function clearMsgBox () {
@@ -133,4 +142,17 @@ function handleReopenConn (message) {
       friend.style.fontWeight = 'normal'
     }
   })
+}
+
+function displayReportDiv () {
+  let elements = messages.getElementsByClassName('msgs-from-me')
+  let status = elements.item(elements.length - 1).getElementsByClassName('status').item(0)
+  status.style.display = 'flex'
+  let sent = document.createElement('div')
+  sent.style.background = 'url("../resources/check-mark.png") no-repeat'
+  sent.style.backgroundSize = 'contain'
+  sent.style.height = '4%'
+  sent.style.flex = '1'
+  sent.style.alignItems = 'right'
+  status.appendChild(sent)
 }
