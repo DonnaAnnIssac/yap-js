@@ -40,9 +40,7 @@ server.listen(8080, () => {
 function handleMessages (msg, socket) {
   let message = JSON.parse(msg)
   if (message.type === 'clientID') {
-    clientList.forEach((client) => {
-      if (message.text === client) reopenConn(message, socket)
-    })
+    clientList.forEach((client) => { if (message.text === client) reopenConn(message, socket) })
     saveAndSendClientList(message, socket)
   } else if (message.type === 'pm') {
     messages.push(message)
@@ -50,6 +48,8 @@ function handleMessages (msg, socket) {
   } else if (message.type === 'history') {
     let history = retrieveHistory(message)
     socket.send(JSON.stringify({'type': 'history', 'to': message.to, 'from': message.from, 'history': history}))
+  } else if (message.type === 'delivery-report') {
+    sendDeliveryReport(message)
   } else if (message.type === 'broadcast') webSockServer.broadcast(JSON.stringify(message.text), socket._ultron.id)
 }
 
@@ -60,8 +60,10 @@ webSockServer.broadcast = (msg, from) => {
 }
 
 function sendPrivateMsg (message, history) {
+  let sender = clientList.filter((client) => { return client === message.from })
   let receiver = clientList.filter((client) => { return client === message.to })[0]
   clients[receiver].send(JSON.stringify({'type': 'pm', 'to': message.to, 'from': message.from, 'text': message.text, 'history': history}))
+  clients[sender].send(JSON.stringify({'type': 'sent-report', 'from': message.from, 'to': message.to}))
 }
 
 function retrieveHistory (message) {
@@ -79,4 +81,8 @@ function saveAndSendClientList (message, socket) {
 function reopenConn (message, socket) {
   clients[message.text] = socket
   webSockServer.broadcast(JSON.stringify({'type': 'reopenConn', 'from': message.text}), socket._ultron.id)
+}
+
+function sendDeliveryReport (message) {
+  clients[message.from].send(JSON.stringify(message))
 }
