@@ -5,7 +5,7 @@ const app = express()
 const server = http.createServer(app)
 let webSockServer = new WebSocket.Server({server})
 
-app.use(express.static('./Client'))
+app.use(express.static('./public'))
 
 webSockServer.clientTracking = true
 
@@ -43,6 +43,7 @@ function handleMessages (msg, socket) {
     clientList.forEach((client) => { if (message.text === client) reopenConn(message, socket) })
     saveAndSendClientList(message, socket)
   } else if (message.type === 'pm') {
+    message['sent'] = true
     messages.push(message)
     sendPrivateMsg(message, retrieveHistory(message))
   } else if (message.type === 'history') {
@@ -60,10 +61,8 @@ webSockServer.broadcast = (msg, from) => {
 }
 
 function sendPrivateMsg (message, history) {
-  let sender = clientList.filter((client) => { return client === message.from })
-  let receiver = clientList.filter((client) => { return client === message.to })[0]
-  clients[receiver].send(JSON.stringify({'type': 'pm', 'to': message.to, 'from': message.from, 'text': message.text, 'history': history}))
-  clients[sender].send(JSON.stringify({'type': 'sent-report', 'from': message.from, 'to': message.to}))
+  clients[message.to].send(JSON.stringify({'type': 'pm', 'to': message.to, 'from': message.from, 'text': message.text, 'history': history}))
+  clients[message.from].send(JSON.stringify({'type': 'sent-report', 'from': message.from, 'to': message.to}))
 }
 
 function retrieveHistory (message) {
@@ -84,5 +83,7 @@ function reopenConn (message, socket) {
 }
 
 function sendDeliveryReport (message) {
+  let i = messages.findIndex(obj => { return (message.from === obj.from && message.to === obj.to && message.text === obj.text) })
+  messages[i]['delivered'] = true
   clients[message.from].send(JSON.stringify(message))
 }
