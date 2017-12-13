@@ -39,25 +39,23 @@ sock.onmessage = (event) => {
   if (message.type === 'list') {
     displayConnectedClients(message.dataObj)
     addListenerToClient(friendsList)
-  } else if (message.type === 'pm') {
-    message.type = 'delivery-report'
-    sock.send(JSON.stringify(message))
-    if (recipient.textContent !== message.from) notify(message)
-    else displayMessage(message)
-  } else if (message.type === 'history') {
-    displayChat(message)
-  } else if (message.type === 'closeConn') {
-    handleClosedConn(message)
-  } else if (message.type === 'reopenConn') {
-    handleReopenConn(message)
-  } else if (message.type === 'delivery-report') {
-    displayReportDiv()
-  } else if (message.type === 'sent-report') {
-    displayReportDiv()
-  } else if (message.type === 'broadcast') {
+  } else if (message.type === 'pm') handleMessages(message)
+  else if (message.type === 'history') displayChat(message)
+  else if (message.type === 'closeConn') handleClosedConn(message)
+  else if (message.type === 'reopenConn') handleReopenConn(message)
+  else if (message.type === 'delivery-report') displayReportDiv()
+  else if (message.type === 'sent-report') displayReportDiv()
+  else if (message.type === 'broadcast') {
     recipient.textContent = message.from
     displayChat(message)
   }
+}
+
+function handleMessages (message) {
+  message.type = 'delivery-report'
+  sock.send(JSON.stringify(message))
+  if (recipient.textContent !== message.from) notify(message)
+  else displayMessage(message)
 }
 
 function createChildWithText (parent, text) {
@@ -116,8 +114,8 @@ function displayChat (data) {
     data.history.forEach((msg) => {
       if ((msg.to === myId && msg.from === recipient.textContent) || (msg.to === recipient.textContent && msg.from === myId)) {
         displayMessage(msg)
-        if (msg.sent) displayReportDiv()
-        if (msg.delivered) displayReportDiv()
+        if (msg.from === myId && msg.sent) displayReportDiv()
+        if (msg.from === myId && msg.delivered) displayReportDiv()
       }
     })
   }
