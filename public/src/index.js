@@ -40,7 +40,8 @@ sock.onmessage = (event) => {
     displayConnectedClients(message.dataObj)
     addListenerToClient(friendsList)
   } else if (message.type === 'pm') {
-    sock.send(JSON.stringify({'type': 'delivery-report', 'from': message.from, 'to': message.to}))
+    message.type = 'delivery-report'
+    sock.send(JSON.stringify(message))
     if (recipient.textContent !== message.from) notify(message)
     else displayMessage(message)
   } else if (message.type === 'history') {
@@ -115,7 +116,8 @@ function displayChat (data) {
     data.history.forEach((msg) => {
       if ((msg.to === myId && msg.from === recipient.textContent) || (msg.to === recipient.textContent && msg.from === myId)) {
         displayMessage(msg)
-        displayReportDiv()
+        if (msg.sent) displayReportDiv()
+        if (msg.delivered) displayReportDiv()
       }
     })
   }
@@ -150,13 +152,15 @@ function handleReopenConn (message) {
 
 function displayReportDiv () {
   let elements = messages.getElementsByClassName('msgs-from-me')
-  let status = elements.item(elements.length - 1).getElementsByClassName('status').item(0)
-  status.style.display = 'flex'
-  let sent = document.createElement('div')
-  sent.style.background = 'url("../resources/check-mark.png") no-repeat'
-  sent.style.backgroundSize = 'contain'
-  sent.style.height = '4%'
-  sent.style.flex = '1'
-  sent.style.alignItems = 'right'
-  status.appendChild(sent)
+  if (elements.length !== 0) {
+    let status = elements.item(elements.length - 1).getElementsByClassName('status').item(0)
+    status.style.display = 'flex'
+    let sent = document.createElement('div')
+    sent.style.background = 'url("../resources/check-mark.png") no-repeat'
+    sent.style.backgroundSize = 'contain'
+    sent.style.height = '4%'
+    sent.style.flex = '1'
+    sent.style.alignItems = 'right'
+    status.appendChild(sent)
+  }
 }
