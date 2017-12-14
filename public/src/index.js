@@ -63,8 +63,10 @@ sock.onmessage = (event) => {
   else if (message.type === 'reopenConn') handleReopenConn(message)
   else if (message.type === 'delivery-report') displayReportDiv()
   else if (message.type === 'sent-report') displayReportDiv()
-  else if (message.type === 'file') handleMessages(message)
-  else if (message.type === 'broadcast') {
+  else if (message.type === 'file') {
+    storeFiles(message)
+    handleMessages(message)
+  } else if (message.type === 'broadcast') {
     recipient.textContent = message.from
     displayChat(message)
   }
@@ -114,10 +116,9 @@ function displayMessage (msg) {
   let msgDiv = document.createElement('div')
   msgDiv.className = (msg.from === myId) ? 'msgs-from-me' : 'msgs-to-me'
   if (msg.type === 'file') {
-    let image = document.createElement('img')
-    image.src = msg.data
-    image.style.width = '100'
-    msgDiv.appendChild(image)
+    let [file, modal] = displayFileMsg(msg)
+    msgDiv.appendChild(file)
+    msgDiv.appendChild(modal)
   } else msgDiv.appendChild(document.createTextNode(msg.data))
   let statusDiv = document.createElement('div')
   statusDiv.className = 'status'
@@ -184,4 +185,44 @@ function displayReportDiv () {
     sent.style.alignItems = 'right'
     status.appendChild(sent)
   }
+}
+
+function displayFile (modal, modalContent, msg) {
+  modal.style.display = 'block'
+  modalContent.src = msg.data
+}
+
+function displayFileMsg (msg) {
+  let file = createFileThumb(msg)
+  let modal = createEltWithClass('div', 'modal')
+  let span = createEltWithClass('span', 'close')
+  span.innerHTML = '(x)'
+  span.onclick = () => { modal.style.display = 'none' }
+  let modalContent = createEltWithClass('img', 'modalContent')
+  modal.appendChild(span)
+  modal.appendChild(modalContent)
+  file.onclick = () => displayFile(modal, modalContent, msg)
+  return [file, modal]
+}
+
+function createFileThumb (msg) {
+  let image = document.createElement('img')
+  image.src = msg.data
+  image.style.width = '100'
+  image.className = 'thumbnail'
+  return image
+}
+
+function createEltWithClass (tag, cName) {
+  let elt = document.createElement(tag)
+  elt.className = cName
+  return elt
+}
+
+function storeFiles (msg) {
+  console.log('We here')
+  let sharedFiles = JSON.parse(window.localStorage.getItem('sharedFiles')) || []
+  console.log(sharedFiles)
+  sharedFiles.push(msg)
+  window.localStorage.setItem('sharedFiles', JSON.stringify(sharedFiles))
 }
