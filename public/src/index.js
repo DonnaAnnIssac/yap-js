@@ -1,7 +1,9 @@
 let sock = new WebSocket('ws://localhost:8080')
-let myId
+let myId, clickEvent
+let fileBuff = {}
 let friends = {}
 let count = 0
+
 let recipient = document.getElementById('recipient')
 recipient.appendChild(document.createTextNode(''))
 
@@ -18,8 +20,8 @@ fileInput.onchange = () => {
     msgObj['to'] = recipient.textContent
     msgObj['from'] = myId
     msgObj['data'] = fr.result
-    sock.send(JSON.stringify(msgObj))
-    displayMessage(msgObj)
+    clickEvent = true
+    fileBuff = msgObj
   }
   fr.readAsDataURL(file)
 }
@@ -30,14 +32,20 @@ document.getElementById('save').onclick = () => {
 }
 
 document.getElementById('ping').onclick = () => {
-  let msgObj = {}
-  msgObj['type'] = 'pm'
-  msgObj['to'] = recipient.textContent
-  msgObj['from'] = myId
-  msgObj['data'] = document.getElementById('text').value
-  displayMessage(msgObj)
-  document.getElementById('text').value = ''
-  sock.send(JSON.stringify(msgObj))
+  if (clickEvent) {
+    displayMessage(fileBuff)
+    sock.send(JSON.stringify(fileBuff))
+    clickEvent = false
+  } else {
+    let msgObj = {}
+    msgObj['type'] = 'pm'
+    msgObj['to'] = recipient.textContent
+    msgObj['from'] = myId
+    msgObj['data'] = document.getElementById('text').value
+    displayMessage(msgObj)
+    document.getElementById('text').value = ''
+    sock.send(JSON.stringify(msgObj))
+  }
 }
 
 document.getElementById('text').onclick = () => {
@@ -64,7 +72,6 @@ sock.onmessage = (event) => {
   else if (message.type === 'delivery-report') displayReportDiv()
   else if (message.type === 'sent-report') displayReportDiv()
   else if (message.type === 'file') {
-    storeFiles(message)
     handleMessages(message)
   } else if (message.type === 'broadcast') {
     recipient.textContent = message.from
@@ -103,6 +110,7 @@ function addListenerToClient (parent) {
       child.addEventListener('click', () => {
         count = 0
         recipient.textContent = child.textContent
+        recipient.style.flex = 4
         document.getElementById('ping').disabled = false
         if (child.style.fontWeight === 'bolder') child.style.fontWeight = 'normal'
         if (child.style.fontWeight === 'lighter') document.getElementById('ping').disabled = true
@@ -199,9 +207,13 @@ function displayFileMsg (msg) {
   span.innerHTML = '(x)'
   span.onclick = () => { modal.style.display = 'none' }
   let modalContent = createEltWithClass('img', 'modalContent')
+  let downloadFile = document.createElement('a')
+  downloadFile.href = msg.data
+  downloadFile.download = 'download'
+  downloadFile.appendChild(modalContent)
   modal.appendChild(span)
-  modal.appendChild(modalContent)
-  file.onclick = () => displayFile(modal, modalContent, msg)
+  modal.appendChild(downloadFile)
+  file.ondblclick = () => displayFile(modal, modalContent, msg)
   return [file, modal]
 }
 
@@ -217,12 +229,4 @@ function createEltWithClass (tag, cName) {
   let elt = document.createElement(tag)
   elt.className = cName
   return elt
-}
-
-function storeFiles (msg) {
-  console.log('We here')
-  let sharedFiles = JSON.parse(window.localStorage.getItem('sharedFiles')) || []
-  console.log(sharedFiles)
-  sharedFiles.push(msg)
-  window.localStorage.setItem('sharedFiles', JSON.stringify(sharedFiles))
 }
