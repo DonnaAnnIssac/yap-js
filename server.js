@@ -40,18 +40,17 @@ server.listen(8080, () => {
 function handleMessages (msg, socket) {
   let message = JSON.parse(msg)
   if (message.type === 'clientID') {
-    clientList.forEach((client) => { if (message.text === client) reopenConn(message, socket) })
+    clientList.forEach((client) => { if (message.data === client) reopenConn(message, socket) })
     saveAndSendClientList(message, socket)
-  } else if (message.type === 'pm') {
+  } else if (message.type === 'pm' || message.type === 'file') {
     message['sent'] = true
     messages.push(message)
     sendPrivateMsg(message, retrieveHistory(message))
   } else if (message.type === 'history') {
     let history = retrieveHistory(message)
     socket.send(JSON.stringify({'type': 'history', 'to': message.to, 'from': message.from, 'history': history}))
-  } else if (message.type === 'delivery-report') {
-    sendDeliveryReport(message)
-  } else if (message.type === 'broadcast') webSockServer.broadcast(JSON.stringify(message.text), socket._ultron.id)
+  } else if (message.type === 'delivery-report') sendDeliveryReport(message)
+  else if (message.type === 'broadcast') webSockServer.broadcast(JSON.stringify(message.data), socket._ultron.id)
 }
 
 webSockServer.broadcast = (msg, from) => {
@@ -61,7 +60,7 @@ webSockServer.broadcast = (msg, from) => {
 }
 
 function sendPrivateMsg (message, history) {
-  clients[message.to].send(JSON.stringify({'type': 'pm', 'to': message.to, 'from': message.from, 'text': message.text, 'history': history}))
+  clients[message.to].send(JSON.stringify({'type': message.type, 'to': message.to, 'from': message.from, 'data': message.data, 'history': history}))
   clients[message.from].send(JSON.stringify({'type': 'sent-report', 'from': message.from, 'to': message.to}))
 }
 
@@ -72,18 +71,20 @@ function retrieveHistory (message) {
 }
 
 function saveAndSendClientList (message, socket) {
-  clients[message.text] = socket
-  clientList.push(message.text)
+  clients[message.data] = socket
+  clientList.push(message.data)
   webSockServer.broadcast(JSON.stringify({'type': 'list', 'dataObj': clientList}))
 }
 
 function reopenConn (message, socket) {
-  clients[message.text] = socket
-  webSockServer.broadcast(JSON.stringify({'type': 'reopenConn', 'from': message.text}), socket._ultron.id)
+  clients[message.data] = socket
+  webSockServer.broadcast(JSON.stringify({'type': 'reopenConn', 'from': message.data}), socket._ultron.id)
 }
 
 function sendDeliveryReport (message) {
-  let i = messages.findIndex(obj => { return (message.from === obj.from && message.to === obj.to && message.text === obj.text) })
+  let i = messages.findIndex(obj => {
+    return (message.from === obj.from && message.to === obj.to && message.data === obj.data)
+  })
   messages[i]['delivered'] = true
   clients[message.from].send(JSON.stringify(message))
 }

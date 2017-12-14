@@ -1,14 +1,32 @@
 let sock = new WebSocket('ws://localhost:8080')
 let myId
 let friends = {}
+let count = 0
 let recipient = document.getElementById('recipient')
 recipient.appendChild(document.createTextNode(''))
+
 let messages = document.getElementById('messages')
 let friendsList = document.getElementById('listFriends')
+let fileInput = document.getElementById('fileIp')
+
+fileInput.onchange = () => {
+  let file = fileInput.files[0]
+  let fr = new FileReader()
+  fr.onloadend = () => {
+    let msgObj = {}
+    msgObj['type'] = 'file'
+    msgObj['to'] = recipient.textContent
+    msgObj['from'] = myId
+    msgObj['data'] = fr.result
+    sock.send(JSON.stringify(msgObj))
+    displayMessage(msgObj)
+  }
+  fr.readAsDataURL(file)
+}
 
 document.getElementById('save').onclick = () => {
   myId = document.getElementById('userName').value
-  sock.send(JSON.stringify({'type': 'clientID', 'text': myId}))
+  sock.send(JSON.stringify({'type': 'clientID', 'data': myId}))
 }
 
 document.getElementById('ping').onclick = () => {
@@ -16,7 +34,7 @@ document.getElementById('ping').onclick = () => {
   msgObj['type'] = 'pm'
   msgObj['to'] = recipient.textContent
   msgObj['from'] = myId
-  msgObj['text'] = document.getElementById('text').value
+  msgObj['data'] = document.getElementById('text').value
   displayMessage(msgObj)
   document.getElementById('text').value = ''
   sock.send(JSON.stringify(msgObj))
@@ -45,6 +63,7 @@ sock.onmessage = (event) => {
   else if (message.type === 'reopenConn') handleReopenConn(message)
   else if (message.type === 'delivery-report') displayReportDiv()
   else if (message.type === 'sent-report') displayReportDiv()
+  else if (message.type === 'file') handleMessages(message)
   else if (message.type === 'broadcast') {
     recipient.textContent = message.from
     displayChat(message)
@@ -52,8 +71,7 @@ sock.onmessage = (event) => {
 }
 
 function handleMessages (message) {
-  message.type = 'delivery-report'
-  sock.send(JSON.stringify(message))
+  sock.send(JSON.stringify({'type': 'delivery-report', 'to': message.to, 'from': message.from, 'data': message.data}))
   if (recipient.textContent !== message.from) notify(message)
   else displayMessage(message)
 }
@@ -81,6 +99,7 @@ function addListenerToClient (parent) {
     if (friends[child.textContent] === false) {
       friends[child.textContent] = true
       child.addEventListener('click', () => {
+        count = 0
         recipient.textContent = child.textContent
         document.getElementById('ping').disabled = false
         if (child.style.fontWeight === 'bolder') child.style.fontWeight = 'normal'
@@ -92,16 +111,21 @@ function addListenerToClient (parent) {
 }
 
 function displayMessage (msg) {
-  let textDiv = document.createElement('div')
-  textDiv.className = (msg.from === myId) ? 'msgs-from-me' : 'msgs-to-me'
-  textDiv.appendChild(document.createTextNode(msg.text))
+  let msgDiv = document.createElement('div')
+  msgDiv.className = (msg.from === myId) ? 'msgs-from-me' : 'msgs-to-me'
+  if (msg.type === 'file') {
+    let image = document.createElement('img')
+    image.src = msg.data
+    image.style.width = '100'
+    msgDiv.appendChild(image)
+  } else msgDiv.appendChild(document.createTextNode(msg.data))
   let statusDiv = document.createElement('div')
   statusDiv.className = 'status'
-  textDiv.appendChild(statusDiv)
-  messages.appendChild(textDiv)
-  textDiv.style.display = 'flex'
-  textDiv.style.flexDirection = 'column'
-  textDiv.style.alignSelf = (msg.from === myId) ? 'flex-end' : 'flex-start'
+  msgDiv.appendChild(statusDiv)
+  messages.appendChild(msgDiv)
+  msgDiv.style.display = 'flex'
+  msgDiv.style.flexDirection = 'column'
+  msgDiv.style.alignSelf = (msg.from === myId) ? 'flex-end' : 'flex-start'
 }
 
 function clearMsgBox () {
@@ -122,7 +146,6 @@ function displayChat (data) {
 }
 
 function notify (message) {
-  let count = 0
   friendsList.childNodes.forEach((friend) => {
     if (friend.textContent === message.from) {
       friend.style.fontWeight = 'bolder'
