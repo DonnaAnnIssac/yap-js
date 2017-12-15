@@ -13,6 +13,7 @@ html, body, #appWindow {
     flex: 1;
     display: flex;
     flex-direction: column;
+    background-color: #000a12;
 }
 
 #chatWindow {
@@ -22,38 +23,44 @@ html, body, #appWindow {
     outline: thick ridge white;
 }
 
-#recipient {
+#options {
     flex: 1;
-    background-color: #000a12;
-    color: aliceblue;
+    /* background-color: #000a12; */
+    display: flex;
+}
+
+#recipient {
     display: flex;
     justify-content: center;
     align-items: center;
+    /* color: aliceblue; */
 }
 
 #msgBox {
     flex: 5;
     display: flex;
     flex-direction: column;
-    background-color: #b0bec5;
 }
 
 #messages {
     flex: 1;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    height: 100;
 }
+
 #sendCtrls {
     flex: 1;
     /* background-color: #b0bec5; */
     display: flex;
     justify-content: center;
     align-items: center;
+    background-color: transparent;
 }
 /* sideBar children -> id, controls, friends */
 #id {
     flex: 1;
-    background-color: #000a12;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -71,7 +78,7 @@ html, body, #appWindow {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: #b0bec5;
+    overflow-y: auto;
 }
 
 #listFriends {
@@ -80,6 +87,27 @@ html, body, #appWindow {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    width: 100%;
+}
+
+/* #listFriends:hover > div {
+    zoom: 1;
+    filter: alpha(opacity=45);
+    opacity: 0.45;
+} */
+
+#listFriends > div:hover {
+    box-shadow: 3px 3px 15px #263238;
+    border-color:#263238;
+    background: #263238;
+    background-color: #263238;
+    /* color: #fff; */
+    cursor: pointer;
+
+    /*Opacity*/
+    zoom: 1;
+    filter: alpha(opacity=100);
+    opacity: 1;
 }
 
 #text {
@@ -92,16 +120,8 @@ html, body, #appWindow {
     text-align: center;
     color: black;
     font-family: arial;
-    /* content: "";
-    width: 0px;
-    height: 0px;
-    position: absolute;
-    border-left: 10px solid #00bfb6;
-    border-right: 10px solid transparent;
-    border-top: 10px solid #00bfb6;
-    border-bottom: 10px solid transparent;
-    right: -20px;
-    top: 6px; */
+    flex-shrink: 1;
+    display: flex;
 }
 
 .msgs-to-me {
@@ -110,6 +130,8 @@ html, body, #appWindow {
     text-align: center;
     color: black;
     font-family: arial;
+    flex-shrink: 1;
+    display: flex;
 }
 
 .thumbnail {
