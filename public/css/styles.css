@@ -25,7 +25,6 @@ html, body, #appWindow {
 
 #options {
     flex: 1;
-    /* background-color: #000a12; */
     display: flex;
 }
 
@@ -33,7 +32,6 @@ html, body, #appWindow {
     display: flex;
     justify-content: center;
     align-items: center;
-    /* color: aliceblue; */
 }
 
 #msgBox {
@@ -47,18 +45,20 @@ html, body, #appWindow {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    height: 100;
+    height: 100%;
+    padding: 10px;
 }
 
 #sendCtrls {
     flex: 1;
-    /* background-color: #b0bec5; */
     display: flex;
     justify-content: center;
     align-items: center;
     background-color: transparent;
 }
+
 /* sideBar children -> id, controls, friends */
+
 #id {
     flex: 1;
     display: flex;
@@ -90,20 +90,12 @@ html, body, #appWindow {
     width: 100%;
 }
 
-/* #listFriends:hover > div {
-    zoom: 1;
-    filter: alpha(opacity=45);
-    opacity: 0.45;
-} */
-
 #listFriends > div:hover {
     box-shadow: 3px 3px 15px #263238;
     border-color:#263238;
     background: #263238;
     background-color: #263238;
-    /* color: #fff; */
     cursor: pointer;
-
     /*Opacity*/
     zoom: 1;
     filter: alpha(opacity=100);

@@ -15,7 +15,18 @@ document.getElementById('save').onclick = () => {
   sock.send(JSON.stringify({'type': 'clientID', 'data': myId}))
 }
 
-document.getElementById('ping').onclick = sendMsg()
+document.getElementById('ping').onclick = () => {
+  if (clickEvent) {
+    displayMessage(fileBuff)
+    sock.send(JSON.stringify(fileBuff))
+    clickEvent = false
+  } else {
+    let msgObj = createMsgObj('pm', document.getElementById('text').value)
+    displayMessage(msgObj)
+    document.getElementById('text').value = ''
+    sock.send(JSON.stringify(msgObj))
+  }
+}
 
 document.getElementById('text').onkeyup = (event) => {
   event.preventDefault()
@@ -38,19 +49,6 @@ function createMsgObj (type, data) {
   msgObj['data'] = data
   msgObj['time'] = getTimeString()
   return msgObj
-}
-
-function sendMsg () {
-  if (clickEvent) {
-    displayMessage(fileBuff)
-    sock.send(JSON.stringify(fileBuff))
-    clickEvent = false
-  } else {
-    let msgObj = createMsgObj('pm', document.getElementById('text').value)
-    displayMessage(msgObj)
-    document.getElementById('text').value = ''
-    sock.send(JSON.stringify(msgObj))
-  }
 }
 
 fileInput.onchange = () => {
@@ -100,6 +98,7 @@ function createChildWithText (parent, text) {
   dataDiv.style.textAlign = 'center'
   dataDiv.style.verticalAlign = 'middle'
   parent.appendChild(dataDiv)
+  friends[text] = false
 }
 
 function displayConnectedClients (friends) {
@@ -109,7 +108,6 @@ function displayConnectedClients (friends) {
         !friendsList.hasChildNodes()) &&
       friendsList.childNodes.length - 1 < i) {
       createChildWithText(friendsList, friend)
-      friends[friend] = false
     }
   })
 }
@@ -118,15 +116,18 @@ function addListenerToClient (parent) {
   parent.childNodes.forEach((child) => {
     if (friends[child.textContent] === false) {
       friends[child.textContent] = true
-      child.addEventListener('click', onClientSelect(child))
+      child.addEventListener('click', () => onClientSelect(parent, child))
     }
   })
 }
 
-function onClientSelect (child) {
+function onClientSelect (parent, child) {
   child.style.backgroundColor = '#263238'
   recipient.textContent = child.textContent
   recipient.style.flex = 4
+  parent.childNodes.forEach((node) => {
+    if (node !== child) node.style.backgroundColor = 'initial'
+  })
   // document.getElementById('ping').disabled = false
   if (child.style.fontWeight === 'bolder') child.style.fontWeight = 'normal'
   // if (child.style.fontWeight === 'lighter') document.getElementById('ping').disabled = true
@@ -161,17 +162,18 @@ function addMessageStat (msg) {
   timeDiv.style.color = 'gray'
   timeDiv.style.textAlign = 'center'
   timeDiv.style.verticalAlign = 'middle'
-  let stat = document.createElement('div')
-  stat.appendChild(timeDiv)
-  stat.appendChild(statusDiv)
-  return stat
+  return [timeDiv, statusDiv]
 }
 
 function displayMessage (msg) {
   let msgDiv = document.createElement('div')
   msgDiv.className = (msg.from === myId) ? 'msgs-from-me' : 'msgs-to-me'
   msgDiv = displayMessageBody(msg, msgDiv)
-  msgDiv.appendChild(addMessageStat)
+  let stat = document.createElement('div')
+  let [timeDiv, statusDiv] = addMessageStat(msg)
+  stat.appendChild(timeDiv)
+  stat.appendChild(statusDiv)
+  msgDiv.appendChild(stat)
   messages.appendChild(msgDiv)
   msgDiv.style.display = 'flex'
   msgDiv.style.flexDirection = 'column'
