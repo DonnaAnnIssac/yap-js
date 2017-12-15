@@ -20,6 +20,8 @@ fileInput.onchange = () => {
     msgObj['to'] = recipient.textContent
     msgObj['from'] = myId
     msgObj['data'] = fr.result
+    let date = new Date()
+    msgObj['time'] = date.getHours() + ':' + date.getMinutes()
     clickEvent = true
     fileBuff = msgObj
   }
@@ -42,6 +44,8 @@ document.getElementById('ping').onclick = () => {
     msgObj['to'] = recipient.textContent
     msgObj['from'] = myId
     msgObj['data'] = document.getElementById('text').value
+    let date = new Date()
+    msgObj['time'] = date.getHours() + ':' + date.getMinutes()
     displayMessage(msgObj)
     document.getElementById('text').value = ''
     sock.send(JSON.stringify(msgObj))
@@ -88,6 +92,10 @@ function handleMessages (message) {
 function createChildWithText (parent, text) {
   let dataDiv = document.createElement('div')
   dataDiv.appendChild(document.createTextNode(text))
+  dataDiv.style.width = '100%'
+  dataDiv.style.color = '#fff'
+  dataDiv.style.textAlign = 'center'
+  dataDiv.style.verticalAlign = 'middle'
   parent.appendChild(dataDiv)
   friends[text] = false
 }
@@ -109,6 +117,7 @@ function addListenerToClient (parent) {
       friends[child.textContent] = true
       child.addEventListener('click', () => {
         count = 0
+        child.style.backgroundColor = '#263238'
         recipient.textContent = child.textContent
         recipient.style.flex = 4
         document.getElementById('ping').disabled = false
@@ -124,13 +133,26 @@ function displayMessage (msg) {
   let msgDiv = document.createElement('div')
   msgDiv.className = (msg.from === myId) ? 'msgs-from-me' : 'msgs-to-me'
   if (msg.type === 'file') {
-    let [file, modal] = displayFileMsg(msg)
+    let [file, modal] = displayFileMsg(msg) // text or file
     msgDiv.appendChild(file)
     msgDiv.appendChild(modal)
-  } else msgDiv.appendChild(document.createTextNode(msg.data))
-  let statusDiv = document.createElement('div')
+  } else {
+    let textDiv = document.createElement('div')
+    textDiv.appendChild(document.createTextNode(msg.data))
+    msgDiv.appendChild(textDiv)
+  }
+  let statusDiv = document.createElement('div') // status
   statusDiv.className = 'status'
-  msgDiv.appendChild(statusDiv)
+  let timeDiv = document.createElement('div') // time
+  timeDiv.appendChild(document.createTextNode(msg.time))
+  timeDiv.style.fontSize = '10'
+  timeDiv.style.color = 'gray'
+  timeDiv.style.textAlign = 'center'
+  timeDiv.style.verticalAlign = 'middle'
+  let stat = document.createElement('div')
+  stat.appendChild(timeDiv)
+  stat.appendChild(statusDiv)
+  msgDiv.appendChild(stat)
   messages.appendChild(msgDiv)
   msgDiv.style.display = 'flex'
   msgDiv.style.flexDirection = 'column'
@@ -188,7 +210,7 @@ function displayReportDiv () {
     let sent = document.createElement('div')
     sent.style.background = 'url("../resources/check-mark.png") no-repeat'
     sent.style.backgroundSize = 'contain'
-    sent.style.height = '4%'
+    sent.style.height = '10px'
     sent.style.flex = '1'
     sent.style.alignItems = 'right'
     status.appendChild(sent)
@@ -204,7 +226,7 @@ function displayFileMsg (msg) {
   let file = createFileThumb(msg)
   let modal = createEltWithClass('div', 'modal')
   let span = createEltWithClass('span', 'close')
-  span.innerHTML = '(x)'
+  span.innerHTML = 'x'
   span.onclick = () => { modal.style.display = 'none' }
   let modalContent = createEltWithClass('img', 'modalContent')
   let downloadFile = document.createElement('a')
@@ -213,7 +235,7 @@ function displayFileMsg (msg) {
   downloadFile.appendChild(modalContent)
   modal.appendChild(span)
   modal.appendChild(downloadFile)
-  file.ondblclick = () => displayFile(modal, modalContent, msg)
+  file.onclick = () => displayFile(modal, modalContent, msg)
   return [file, modal]
 }
 
