@@ -60,7 +60,7 @@ webSockServer.broadcast = (msg, from) => {
 }
 
 function sendPrivateMsg (message, history) {
-  clients[message.to].send(JSON.stringify({'type': message.type, 'to': message.to, 'from': message.from, 'data': message.data, 'history': history}))
+  clients[message.to].send(JSON.stringify({'type': message.type, 'to': message.to, 'from': message.from, 'data': message.data, 'time': message.time, 'history': history}))
   clients[message.from].send(JSON.stringify({'type': 'sent-report', 'from': message.from, 'to': message.to}))
 }
 
