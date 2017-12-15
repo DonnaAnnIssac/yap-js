@@ -2,7 +2,6 @@ let sock = new WebSocket('ws://localhost:8080')
 let myId, clickEvent
 let fileBuff = {}
 let friends = {}
-let count = 0
 
 let recipient = document.getElementById('recipient')
 recipient.appendChild(document.createTextNode(''))
@@ -11,45 +10,58 @@ let messages = document.getElementById('messages')
 let friendsList = document.getElementById('listFriends')
 let fileInput = document.getElementById('fileIp')
 
-fileInput.onchange = () => {
-  let file = fileInput.files[0]
-  let fr = new FileReader()
-  fr.onloadend = () => {
-    let msgObj = {}
-    msgObj['type'] = 'file'
-    msgObj['to'] = recipient.textContent
-    msgObj['from'] = myId
-    msgObj['data'] = fr.result
-    let date = new Date()
-    msgObj['time'] = date.getHours() + ':' + date.getMinutes()
-    clickEvent = true
-    fileBuff = msgObj
-  }
-  fr.readAsDataURL(file)
-}
-
 document.getElementById('save').onclick = () => {
   myId = document.getElementById('userName').value
   sock.send(JSON.stringify({'type': 'clientID', 'data': myId}))
 }
 
-document.getElementById('ping').onclick = () => {
+document.getElementById('ping').onclick = sendMsg()
+
+document.getElementById('text').onkeyup = (event) => {
+  event.preventDefault()
+  if (event.keyCode === 13) document.getElementById('ping').click()
+}
+
+function getTimeString () {
+  let date = new Date()
+  let hh = date.getHours()
+  let mm = date.getMinutes()
+  if (mm.toString().length === 1) mm = '0' + mm
+  return hh + ':' + mm
+}
+
+function createMsgObj (type, data) {
+  let msgObj = {}
+  msgObj['type'] = type
+  msgObj['to'] = recipient.textContent
+  msgObj['from'] = myId
+  msgObj['data'] = data
+  msgObj['time'] = getTimeString()
+  return msgObj
+}
+
+function sendMsg () {
   if (clickEvent) {
     displayMessage(fileBuff)
     sock.send(JSON.stringify(fileBuff))
     clickEvent = false
   } else {
-    let msgObj = {}
-    msgObj['type'] = 'pm'
-    msgObj['to'] = recipient.textContent
-    msgObj['from'] = myId
-    msgObj['data'] = document.getElementById('text').value
-    let date = new Date()
-    msgObj['time'] = date.getHours() + ':' + date.getMinutes()
+    let msgObj = createMsgObj('pm', document.getElementById('text').value)
     displayMessage(msgObj)
     document.getElementById('text').value = ''
     sock.send(JSON.stringify(msgObj))
   }
+}
+
+fileInput.onchange = () => {
+  let file = fileInput.files[0]
+  let fr = new FileReader()
+  fr.onloadend = () => {
+    let msgObj = createMsgObj('file', fr.result)
+    clickEvent = true
+    fileBuff = msgObj
+  }
+  fr.readAsDataURL(file)
 }
 
 document.getElementById('text').onclick = () => {
@@ -69,24 +81,15 @@ sock.onmessage = (event) => {
   if (message.type === 'list') {
     displayConnectedClients(message.dataObj)
     addListenerToClient(friendsList)
-  } else if (message.type === 'pm') handleMessages(message)
+  } else if (message.type === 'pm' || message.type === 'file') handleMessages(message)
   else if (message.type === 'history') displayChat(message)
   else if (message.type === 'closeConn') handleClosedConn(message)
   else if (message.type === 'reopenConn') handleReopenConn(message)
-  else if (message.type === 'delivery-report') displayReportDiv()
-  else if (message.type === 'sent-report') displayReportDiv()
-  else if (message.type === 'file') {
-    handleMessages(message)
-  } else if (message.type === 'broadcast') {
+  else if (message.type === 'delivery-report' || message.type === 'sent-report') displayReportDiv()
+  else if (message.type === 'broadcast') {
     recipient.textContent = message.from
     displayChat(message)
   }
-}
-
-function handleMessages (message) {
-  sock.send(JSON.stringify({'type': 'delivery-report', 'to': message.to, 'from': message.from, 'data': message.data}))
-  if (recipient.textContent !== message.from) notify(message)
-  else displayMessage(message)
 }
 
 function createChildWithText (parent, text) {
@@ -97,7 +100,6 @@ function createChildWithText (parent, text) {
   dataDiv.style.textAlign = 'center'
   dataDiv.style.verticalAlign = 'middle'
   parent.appendChild(dataDiv)
-  friends[text] = false
 }
 
 function displayConnectedClients (friends) {
@@ -107,6 +109,7 @@ function displayConnectedClients (friends) {
         !friendsList.hasChildNodes()) &&
       friendsList.childNodes.length - 1 < i) {
       createChildWithText(friendsList, friend)
+      friends[friend] = false
     }
   })
 }
@@ -115,32 +118,41 @@ function addListenerToClient (parent) {
   parent.childNodes.forEach((child) => {
     if (friends[child.textContent] === false) {
       friends[child.textContent] = true
-      child.addEventListener('click', () => {
-        count = 0
-        child.style.backgroundColor = '#263238'
-        recipient.textContent = child.textContent
-        recipient.style.flex = 4
-        document.getElementById('ping').disabled = false
-        if (child.style.fontWeight === 'bolder') child.style.fontWeight = 'normal'
-        if (child.style.fontWeight === 'lighter') document.getElementById('ping').disabled = true
-        sock.send(JSON.stringify({ 'type': 'history', 'to': recipient.textContent, 'from': myId }))
-      })
+      child.addEventListener('click', onClientSelect(child))
     }
   })
 }
 
-function displayMessage (msg) {
-  let msgDiv = document.createElement('div')
-  msgDiv.className = (msg.from === myId) ? 'msgs-from-me' : 'msgs-to-me'
+function onClientSelect (child) {
+  child.style.backgroundColor = '#263238'
+  recipient.textContent = child.textContent
+  recipient.style.flex = 4
+  // document.getElementById('ping').disabled = false
+  if (child.style.fontWeight === 'bolder') child.style.fontWeight = 'normal'
+  // if (child.style.fontWeight === 'lighter') document.getElementById('ping').disabled = true
+  sock.send(JSON.stringify({ 'type': 'history', 'to': recipient.textContent, 'from': myId }))
+}
+
+function handleMessages (message) {
+  sock.send(JSON.stringify({'type': 'delivery-report', 'to': message.to, 'from': message.from, 'data': message.data}))
+  if (recipient.textContent !== message.from) notify(message)
+  else displayMessage(message)
+}
+
+function displayMessageBody (msg, div) {
   if (msg.type === 'file') {
     let [file, modal] = displayFileMsg(msg) // text or file
-    msgDiv.appendChild(file)
-    msgDiv.appendChild(modal)
+    div.appendChild(file)
+    div.appendChild(modal)
   } else {
     let textDiv = document.createElement('div')
     textDiv.appendChild(document.createTextNode(msg.data))
-    msgDiv.appendChild(textDiv)
+    div.appendChild(textDiv)
   }
+  return div
+}
+
+function addMessageStat (msg) {
   let statusDiv = document.createElement('div') // status
   statusDiv.className = 'status'
   let timeDiv = document.createElement('div') // time
@@ -152,7 +164,14 @@ function displayMessage (msg) {
   let stat = document.createElement('div')
   stat.appendChild(timeDiv)
   stat.appendChild(statusDiv)
-  msgDiv.appendChild(stat)
+  return stat
+}
+
+function displayMessage (msg) {
+  let msgDiv = document.createElement('div')
+  msgDiv.className = (msg.from === myId) ? 'msgs-from-me' : 'msgs-to-me'
+  msgDiv = displayMessageBody(msg, msgDiv)
+  msgDiv.appendChild(addMessageStat)
   messages.appendChild(msgDiv)
   msgDiv.style.display = 'flex'
   msgDiv.style.flexDirection = 'column'
@@ -174,32 +193,6 @@ function displayChat (data) {
       }
     })
   }
-}
-
-function notify (message) {
-  friendsList.childNodes.forEach((friend) => {
-    if (friend.textContent === message.from) {
-      friend.style.fontWeight = 'bolder'
-      count++
-    }
-  })
-  return count
-}
-
-function handleClosedConn (message) {
-  friendsList.childNodes.forEach((friend) => {
-    if (friend.textContent === message.from) {
-      friend.style.fontWeight = 'lighter'
-    }
-  })
-}
-
-function handleReopenConn (message) {
-  friendsList.childNodes.forEach((friend) => {
-    if (friend.textContent === message.from) {
-      friend.style.fontWeight = 'normal'
-    }
-  })
 }
 
 function displayReportDiv () {
@@ -251,4 +244,28 @@ function createEltWithClass (tag, cName) {
   let elt = document.createElement(tag)
   elt.className = cName
   return elt
+}
+
+function notify (message) {
+  friendsList.childNodes.forEach((friend) => {
+    if (friend.textContent === message.from) {
+      friend.style.fontWeight = 'bolder'
+    }
+  })
+}
+
+function handleClosedConn (message) {
+  friendsList.childNodes.forEach((friend) => {
+    if (friend.textContent === message.from) {
+      friend.style.fontWeight = 'lighter'
+    }
+  })
+}
+
+function handleReopenConn (message) {
+  friendsList.childNodes.forEach((friend) => {
+    if (friend.textContent === message.from) {
+      friend.style.fontWeight = 'normal'
+    }
+  })
 }
