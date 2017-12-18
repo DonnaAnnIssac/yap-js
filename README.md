@@ -19,3 +19,7 @@ The app should now be running on localhost:8080
 - Displays list of connected clients and their availbility
 - Saves and retrieves chat history
 - File sharing
+
+# License
+
+[MIT](LICENSE)
