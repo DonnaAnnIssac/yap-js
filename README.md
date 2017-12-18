@@ -5,10 +5,10 @@ Chat app built using Nodejs
 
 Make sure you have [Node.js](https://nodejs.org/en/download/) and [Express.js](https://expressjs.com/) installed.
 
-`git clone git@github.com:DonnaAnnIssac/yap-js.git 
-cd yap-js
-npm install
-npm start`
+`git clone git@github.com:DonnaAnnIssac/yap-js.git `
+`cd yap-js`
+`npm install`
+`npm start`
 
 The app should now be running on localhost:8080
  
